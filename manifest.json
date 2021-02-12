@@ -1,0 +1,9 @@
+{
+  "id": "open-note-to-window-title",
+  "name": "Show the current open note in the window title",
+  "version": "0.0.1",
+  "description": "This plugin shows the current open note in the window title",
+  "author": "Joost Plattel",
+  "authorUrl": "https://jplattel.nl",
+  "isDesktopOnly": false
+}
