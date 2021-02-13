@@ -17,5 +17,10 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 			})
 		);
 	}
+
+	// Restore original title on unload.
+	onunload() { 
+		document.title = this.baseTitle
+	}
 }
 
