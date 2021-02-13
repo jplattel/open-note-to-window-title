@@ -1,6 +1,6 @@
 {
   "name": "open-note-to-window-title",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Show the currently open note in the window title of Obsidian",
   "main": "main.js",
   "scripts": {
