@@ -1,4 +1,4 @@
-import { Plugin } from 'obsidian';
+import { Plugin, TFile } from 'obsidian';
 
 export default class ActiveNoteTitlePlugin extends Plugin {
 	// Get the window title
