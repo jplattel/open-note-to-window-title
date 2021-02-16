@@ -2,25 +2,35 @@ import { Plugin, TFile } from 'obsidian';
 
 export default class ActiveNoteTitlePlugin extends Plugin {
 	// Get the window title
-	baseTitle = document.title
+	baseTitle = document.title;
 
-	onload() {
-		// When opening a file, update the window title
-		this.registerEvent(
-			this.app.workspace.on("file-open", (file) => {
-				// Only update on files (not folder or blank)
-				if (file instanceof TFile) {
-					document.title = this.baseTitle + ' - ' + file.path
-				} else {
-					document.title = this.baseTitle
-				}
-			})
-		);
+	async onload() {
+		console.log('loading ActiveNoteTitlePlugin plugin');
+		// When opening, renaming or deleting a file, update the window title
+		this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
+		this.registerEvent(this.app.vault.on('rename', this.handleRename));
+		this.registerEvent(this.app.vault.on('delete', this.handleDelete));
 	}
 
 	// Restore original title on unload.
 	onunload() { 
-		document.title = this.baseTitle
+		document.title = this.baseTitle;
 	}
-}
 
+	private readonly handleRename = async (file: TFile): Promise<void> => {
+		document.title = this.baseTitle + ' - ' + file.path;
+	};
+
+	private readonly handleDelete = async (file: TFile): Promise<void> => {
+		document.title = this.baseTitle;
+	};
+
+	private readonly handleOpen = async (file: TFile): Promise<void> => {
+		if (file instanceof TFile) {
+			document.title = this.baseTitle + ' - ' + file.path;
+		} else {
+			document.title = this.baseTitle;
+		}
+	};
+
+}
