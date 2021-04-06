@@ -18,11 +18,15 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	}
 
 	private readonly handleRename = async (file: TFile): Promise<void> => {
-		document.title = this.baseTitle + ' - ' + file.path;
+		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
+			document.title = this.baseTitle + ' - ' + file.path;
+		}
 	};
 
 	private readonly handleDelete = async (file: TFile): Promise<void> => {
-		document.title = this.baseTitle;
+		if (this.app.workspace.getActiveFile() === null || this.app.workspace.getActiveFile() === undefined) {
+			document.title = this.baseTitle;
+		}
 	};
 
 	private readonly handleOpen = async (file: TFile): Promise<void> => {
