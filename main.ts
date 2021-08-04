@@ -39,12 +39,17 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		if (file) {
 			// If a file is open, the filename, path and frontmatter is added 
 			let frontmatter = this.app.metadataCache.getFileCache(file).frontmatter
+			for (const [frontmatterKey, frontmatterValue] of Object.entries(frontmatter || {})) {
+				console.log(frontmatterKey, frontmatterValue)
+				template['frontmatter.' + frontmatterKey] = frontmatterValue
+			}
+
 			template = {
 				'filename': file.name,
 				'filepath': file.path,
-				...frontmatter,
 				...template
 			}
+			console.log(template)
 			document.title = this.templateTitle(template, this.settings.titleTemplate)
 		} else {
 			document.title = this.templateTitle(template, this.settings.titleTemplateEmpty)
@@ -52,10 +57,14 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	}
 
 	templateTitle(template, title: String): String {
+		// Try each template key
 		Object.keys(template).forEach(key => {
-			title = title.replace(`{${key}}`, template[key])
+			title = title.replace(`{{${key}}}`, template[key] || '')
 		})
-		console.log(title)
+
+		// Remove any templates that cannot be filled
+		title = title.replace(/{{.*}}/g, '')
+
 		return title
 	}
 	
@@ -118,9 +127,9 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Default template for window title (applicable when no file is open)')
-			.setDesc('You can use the following placeholders: {vault}, {workspace}')
-			.addText(text => text.setPlaceholder("Obsidian - {vault}")
-				.setValue(this.plugin.settings.titleTemplateEmpty || "Obsidian - {vault}")
+			.setDesc('You can use the following placeholders: {{vault}}, {{workspace}}')
+			.addText(text => text.setPlaceholder("Obsidian - {{vault}}")
+				.setValue(this.plugin.settings.titleTemplateEmpty || "Obsidian - {{vault}}")
 				.onChange((value) => {
 					this.plugin.settings.titleTemplateEmpty = value;
 					this.plugin.saveData(this.plugin.settings);
@@ -129,9 +138,9 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Template for window title when a file is opened or changed')
-			.setDesc('You can use the following placeholders: {vault}, {workspace}, {filename}, {filepath} and {<any_frontmatter_key>}')
-			.addText(text => text.setPlaceholder("Obsidian - {vault} - {filename}")
-			.setValue(this.plugin.settings.titleTemplate || "Obsidian - {vault} - {filename}")
+			.setDesc('You can use the following placeholders: {{vault}}, {{workspace}}, {{filename}}, {{filepath}} and {{frontmatter.<any_frontmatter_key>}}')
+			.addText(text => text.setPlaceholder("Obsidian - {{vault}} - {{filename}}")
+			.setValue(this.plugin.settings.titleTemplate || "Obsidian - {{vault}} - {{filename}}")
 			.onChange((value) => {
 				this.plugin.settings.titleTemplate = value;
 				this.plugin.saveData(this.plugin.settings);
