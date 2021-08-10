@@ -1,4 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { ipcRenderer } from 'electron';
+
+const appVer: String = ipcRenderer.sendSync("version");
 
 export default class ActiveNoteTitlePlugin extends Plugin {
 	// Get the window title
@@ -7,7 +10,6 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	async onload() {
 		// Show the plugin is loading for developers
 		console.log('loading ActiveNoteTitlePlugin plugin');
-
 		// When opening, renaming or deleting a file, update the window title
 		this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
 		this.registerEvent(this.app.vault.on('rename', this.handleRename));
@@ -33,6 +35,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		// For the template, the vault and workspace are always available
 		let template = {
 			'vault': this.app.vault.getName(),
+			'version': appVer || '',
 			'workspace': this.app.internalPlugins.plugins.workspaces.instance.activeWorkspace // Defaults to: '' if not enabled
 		}
 
@@ -40,7 +43,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 			// If a file is open, the filename, path and frontmatter is added 
 			let frontmatter = this.app.metadataCache.getFileCache(file).frontmatter
 			for (const [frontmatterKey, frontmatterValue] of Object.entries(frontmatter || {})) {
-				console.log(frontmatterKey, frontmatterValue)
+				// console.log(frontmatterKey, frontmatterValue)
 				template['frontmatter.' + frontmatterKey] = frontmatterValue
 			}
 
@@ -49,7 +52,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 				'filepath': file.path,
 				...template
 			}
-			console.log(template)
+			// console.log(template)
 			document.title = this.templateTitle(template, this.settings.titleTemplate)
 		} else {
 			document.title = this.templateTitle(template, this.settings.titleTemplateEmpty)
@@ -60,10 +63,10 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		// Try each template key
 		Object.keys(template).forEach(key => {
 			if (template[key].length > 0) {
-				var reStart = new RegExp(`^{{${key}}}`);
-				var reMid = new RegExp(`%%{{${key}}}`);
-				title = title.replace(reStart, template[key]);
-				title = title.replace(reMid, (this.settings.titleSeparator + template[key]));
+				var reSep = new RegExp(`%%{{${key}}}`);
+				var reNoSep = new RegExp(`{{${key}}}`);
+				title = title.replace(reSep, (this.settings.titleSeparator + template[key]));
+				title = title.replace(reNoSep, template[key]);
 			}
 		});
 		// Remove any templates that cannot be filled
@@ -109,8 +112,8 @@ interface ActiveNoteTitlePluginSettings {
 }
 
 const DEFAULT_SETTINGS: ActiveNoteTitlePluginSettings = { 
-	titleTemplate: "{{filename}} - {{vault}} - Obsidian",
-	titleTemplateEmpty: "{{vault}} - Obsidian",
+	titleTemplate: "{{filename}} - {{vault}} - Obsidian v{{version}}",
+	titleTemplateEmpty: "{{vault}} - Obsidian v{{version}}",
 	titleSeparator: " - "
 }
 
@@ -138,7 +141,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 				text.inputEl.cols = 40;
 				text.inputEl.rows = 1;
 				text
-					.setPlaceholder("{{vault}} - Obsidian")
+					.setPlaceholder("{{vault}} - Obsidian v{{version}}")
 					.setValue(this.plugin.settings.titleTemplateEmpty)
 					.onChange((value) => {
 						this.plugin.settings.titleTemplateEmpty = value;
@@ -154,6 +157,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 			"workspace",
 			"filename",
 			"filepath",
+			"version",
 			"frontmatter.<any_frontmatter_key>"
 		]
 		placeholders.forEach( key => {
@@ -169,7 +173,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 				text.inputEl.cols = 40;
 				text.inputEl.rows = 3;
 				text
-					.setPlaceholder("{{filename}} - {{vault}} - Obsidian")
+					.setPlaceholder("{{filename}} - {{vault}} - Obsidian v{{version}}")
 					.setValue(this.plugin.settings.titleTemplate)
 					.onChange((value) => {
 						this.plugin.settings.titleTemplate = value;
@@ -180,7 +184,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Separator to insert between placeholder elements')
-			.setDesc('Replaces "%%" between elements, as long as they are not empty. Default: " - "')
+			.setDesc('Replaces "%%" between placeholders (as long as they are not empty). Default: " - "')
 			.addTextArea(text => {
 				text.inputEl.style.fontFamily = 'monospace';
 				text.inputEl.cols = 40;
