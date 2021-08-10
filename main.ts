@@ -1,7 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { ipcRenderer } from 'electron';
-
-const appVer: String = ipcRenderer.sendSync("version");
+// import { ipcRenderer } from 'electron';
+const appVer: String = ''; // ipcRenderer.sendSync("version")
 
 export default class ActiveNoteTitlePlugin extends Plugin {
 	// Get the window title
@@ -10,6 +9,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	async onload() {
 		// Show the plugin is loading for developers
 		console.log('loading ActiveNoteTitlePlugin plugin');
+
 		// When opening, renaming or deleting a file, update the window title
 		this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
 		this.registerEvent(this.app.vault.on('rename', this.handleRename));
@@ -17,6 +17,11 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
 		// Load the settings
 		await this.loadSettings(); 
+
+		// parse the version from the original title string
+		const re_version_from_title = new RegExp('[0-9.]+$');
+		this.appVer = this.baseTitle.match(re_version_from_title);
+		console.log('appVer extracted: ' + this.appVer);
 
 		// Add the settings tab
 		this.addSettingTab(new ActiveNoteTitlePluginSettingsTab(this.app, this));
@@ -35,7 +40,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		// For the template, the vault and workspace are always available
 		let template = {
 			'vault': this.app.vault.getName(),
-			'version': appVer || '',
+			'version': this.appVer || '',
 			'workspace': this.app.internalPlugins.plugins.workspaces.instance.activeWorkspace // Defaults to: '' if not enabled
 		}
 
@@ -131,7 +136,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 		let desc: DocumentFragment;
 		containerEl.empty();
 		containerEl.createEl('h2', {text: 'Window title templates'});
-		containerEl.createEl('p', {text: 'These two templates override the window title of the Obsidian window. This is useful for example when you use tracking software that works with window titles. '});
+		containerEl.createEl('p', {text: 'These two templates override the window title of the Obsidian window. This is useful for example when you use tracking software that works with window titles. You can use the format `%%{{placeholder}}` if you want the placeholder to be completely omitted when blank, otherwise whitespace and other characters will be preserved.'});
 
 		new Setting(containerEl)
 			.setName('Default template for window title (applicable when no file is open)')
@@ -184,7 +189,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Separator to insert between placeholder elements')
-			.setDesc('Replaces "%%" between placeholders (as long as they are not empty). Default: " - "')
+			.setDesc('Replaces "%%" between placeholders, as long as they are not empty.')
 			.addTextArea(text => {
 				text.inputEl.style.fontFamily = 'monospace';
 				text.inputEl.cols = 40;
