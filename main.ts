@@ -59,12 +59,15 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	templateTitle(template, title: String): String {
 		// Try each template key
 		Object.keys(template).forEach(key => {
-			title = title.replace(`{{${key}}}`, template[key] || '')
-		})
-
+			if (template[key].length > 0) {
+				var reStart = new RegExp(`^{{${key}}}`);
+				var reMid = new RegExp(`%%{{${key}}}`);
+				title = title.replace(reStart, template[key]);
+				title = title.replace(reMid, (this.settings.titleSeparator + template[key]));
+			}
+		});
 		// Remove any templates that cannot be filled
-		title = title.replace(/{{.*}}/g, '')
-
+		title = title.replace(/(%%)?{{.*}}/g, '')
 		return title
 	}
 	
@@ -102,11 +105,13 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 interface ActiveNoteTitlePluginSettings {
 	titleTemplate: string,
 	titleTemplateEmpty: string,
+	titleSeparator: string
 }
 
 const DEFAULT_SETTINGS: ActiveNoteTitlePluginSettings = { 
-	titleTemplate: "Obsidian - {vault} - {filename}",
-	titleTemplateEmpty: "Obsidian - {vault} - {filename}",
+	titleTemplate: "{{filename}} - {{vault}} - Obsidian",
+	titleTemplateEmpty: "{{vault}} - Obsidian",
+	titleSeparator: " - "
 }
 
 class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
@@ -120,7 +125,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 
 	display(): void {
 		let { containerEl } = this;
-		
+		let desc: DocumentFragment;
 		containerEl.empty();
 		containerEl.createEl('h2', {text: 'Window title templates'});
 		containerEl.createEl('p', {text: 'These two templates override the window title of the Obsidian window. This is useful for example when you use tracking software that works with window titles. '});
@@ -128,23 +133,66 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Default template for window title (applicable when no file is open)')
 			.setDesc('You can use the following placeholders: {{vault}}, {{workspace}}')
-			.addText(text => text.setPlaceholder("Obsidian - {{vault}}")
-				.setValue(this.plugin.settings.titleTemplateEmpty || "Obsidian - {{vault}}")
-				.onChange((value) => {
-					this.plugin.settings.titleTemplateEmpty = value;
-					this.plugin.saveData(this.plugin.settings);
-					this.plugin.refreshTitle();
-				}));
+			.addTextArea(text => {
+				text.inputEl.style.fontFamily = 'monospace';
+				text.inputEl.cols = 40;
+				text.inputEl.rows = 1;
+				text
+					.setPlaceholder("{{vault}} - Obsidian")
+					.setValue(this.plugin.settings.titleTemplateEmpty)
+					.onChange((value) => {
+						this.plugin.settings.titleTemplateEmpty = value;
+						this.plugin.saveData(this.plugin.settings);
+						this.plugin.refreshTitle();
+					});
+				});
+
+		desc = document.createDocumentFragment();
+		desc.append("You can use the following placeholders:")
+		let placeholders = [
+			"vault",
+			"workspace",
+			"filename",
+			"filepath",
+			"frontmatter.<any_frontmatter_key>"
+		]
+		placeholders.forEach( key => {
+			desc.createEl("br")
+			desc.append(`{{${key}}}`)
+		});
 
 		new Setting(containerEl)
 			.setName('Template for window title when a file is opened or changed')
-			.setDesc('You can use the following placeholders: {{vault}}, {{workspace}}, {{filename}}, {{filepath}} and {{frontmatter.<any_frontmatter_key>}}')
-			.addText(text => text.setPlaceholder("Obsidian - {{vault}} - {{filename}}")
-			.setValue(this.plugin.settings.titleTemplate || "Obsidian - {{vault}} - {{filename}}")
-			.onChange((value) => {
-				this.plugin.settings.titleTemplate = value;
-				this.plugin.saveData(this.plugin.settings);
-				this.plugin.refreshTitle();
-			}));
+			.setDesc(desc)
+			.addTextArea(text => {
+				text.inputEl.style.fontFamily = 'monospace';
+				text.inputEl.cols = 40;
+				text.inputEl.rows = 3;
+				text
+					.setPlaceholder("{{filename}} - {{vault}} - Obsidian")
+					.setValue(this.plugin.settings.titleTemplate)
+					.onChange((value) => {
+						this.plugin.settings.titleTemplate = value;
+						this.plugin.saveData(this.plugin.settings);
+						this.plugin.refreshTitle();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName('Separator to insert between placeholder elements')
+			.setDesc('Replaces "%%" between elements, as long as they are not empty. Default: " - "')
+			.addTextArea(text => {
+				text.inputEl.style.fontFamily = 'monospace';
+				text.inputEl.cols = 40;
+				text.inputEl.rows = 1;
+				text
+					.setPlaceholder(" - ")
+					.setValue(this.plugin.settings.titleSeparator)
+					.onChange((value) => {
+						this.plugin.settings.titleSeparator = value;
+						this.plugin.saveData(this.plugin.settings);
+						this.plugin.refreshTitle();
+					});
+				});
 	}
 }
