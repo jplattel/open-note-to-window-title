@@ -1,4 +1,4 @@
-import { App, Plugin, parseFrontMatterEntry, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 // import { ipcRenderer } from 'electron';
 const appVer: String = ''; // ipcRenderer.sendSync("version")
 
