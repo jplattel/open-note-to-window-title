@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Plugin, parseFrontMatterEntry, PluginSettingTab, Setting, TFile } from 'obsidian';
 // import { ipcRenderer } from 'electron';
 const appVer: String = ''; // ipcRenderer.sendSync("version")
 
@@ -8,20 +8,20 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
 	async onload() {
 		// Show the plugin is loading for developers
-		console.log('loading ActiveNoteTitlePlugin plugin');
+		console.log(`loading ${this.manifest.id} plugin`);
 
 		// When opening, renaming or deleting a file, update the window title
 		this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
 		this.registerEvent(this.app.vault.on('rename', this.handleRename));
 		this.registerEvent(this.app.vault.on('delete', this.handleDelete));
+		this.registerEvent(this.app.metadataCache.on('changed', this.handleOpen));
 
 		// Load the settings
-		await this.loadSettings(); 
+		await this.loadSettings();
 
 		// parse the version from the original title string
 		const re_version_from_title = new RegExp('[0-9.]+$');
 		this.appVer = this.baseTitle.match(re_version_from_title);
-		console.log('appVer extracted: ' + this.appVer);
 
 		// Add the settings tab
 		this.addSettingTab(new ActiveNoteTitlePluginSettingsTab(this.app, this));
@@ -31,7 +31,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	}
 
 	// Restore original title on unload.
-	onunload() { 
+	onunload() {
 		document.title = this.baseTitle;
 	}
 
@@ -43,15 +43,14 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 			'version': this.appVer || '',
 			'workspace': this.app.internalPlugins.plugins.workspaces.instance.activeWorkspace // Defaults to: '' if not enabled
 		}
-
-		if (file) {
-			// If a file is open, the filename, path and frontmatter is added 
-			let frontmatter = this.app.metadataCache.getFileCache(file).frontmatter
-			for (const [frontmatterKey, frontmatterValue] of Object.entries(frontmatter || {})) {
-				// console.log(frontmatterKey, frontmatterValue)
-				template['frontmatter.' + frontmatterKey] = frontmatterValue
+		if (file instanceof TFile) {
+			// If a file is open, the filename, path and frontmatter is added
+			let cache = this.app.metadataCache.getFileCache(file);
+			if (cache && cache.frontmatter) {
+				for (let [frontmatterKey, frontmatterValue] of Object.entries(cache.frontmatter)) {
+					template['frontmatter.' + frontmatterKey] = frontmatterValue
+				}
 			}
-
 			template = {
 				'filename': file.name,
 				'filepath': file.path,
@@ -68,8 +67,8 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		// Try each template key
 		Object.keys(template).forEach(key => {
 			if (template[key].length > 0) {
-				var reSep = new RegExp(`%%{{${key}}}`);
-				var reNoSep = new RegExp(`{{${key}}}`);
+				let reSep = new RegExp(`%%{{${key}}}`);
+				let reNoSep = new RegExp(`{{${key}}}`);
 				title = title.replace(reSep, (this.settings.titleSeparator + template[key]));
 				title = title.replace(reNoSep, template[key]);
 			}
@@ -78,9 +77,12 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		title = title.replace(/(%%)?{{.*}}/g, '')
 		return title
 	}
-	
+
 	private readonly handleRename = async (file: TFile): Promise<void> => {
-		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
+		// there MUST be a better way...
+		console.log('file renamed, pausing to allow metadataCache to update');
+		await new Promise(f => setTimeout(f, 3000));
+		if (file instanceof TFile) {
 			this.refreshTitle(file);
 		}
 	};
