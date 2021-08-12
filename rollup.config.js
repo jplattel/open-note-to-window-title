@@ -10,7 +10,7 @@ export default {
     format: 'cjs',
     exports: 'default'
   },
-  external: ['obsidian','electron'],
+  external: ['obsidian'],
   plugins: [
     typescript(),
     nodeResolve({browser: true}),

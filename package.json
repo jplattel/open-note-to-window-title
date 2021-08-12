@@ -1,15 +1,6 @@
 {
-  "name": "open-note-to-window-title",
-  "version": "0.2.3",
-  "description": "Show the currently open note in the window title of Obsidian",
-  "main": "main.js",
-  "scripts": {
-    "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js"
-  },
-  "keywords": [],
   "author": "",
-  "license": "MIT",
+  "description": "Show the currently open note in the window title of Obsidian",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^15.1.0",
     "@rollup/plugin-node-resolve": "^9.0.0",
@@ -20,7 +11,13 @@
     "tslib": "^2.0.3",
     "typescript": "^4.0.3"
   },
-  "dependencies": {
-    "deps": "^1.0.0"
-  }
+  "keywords": [],
+  "license": "MIT",
+  "main": "main.js",
+  "name": "open-note-to-window-title",
+  "scripts": {
+    "build": "rollup --config rollup.config.js",
+    "dev": "rollup --config rollup.config.js -w"
+  },
+  "version": "0.2.3"
 }
