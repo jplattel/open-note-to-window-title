@@ -1,5 +1,14 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile, TAbstractFile, normalizePath } from 'obsidian';
 
+declare module "obsidian" {
+  interface App {
+    internalPlugins: any
+  }
+  interface MetadataCache {
+    onCleanCache: any
+  }
+}
+
 export default class ActiveNoteTitlePlugin extends Plugin {
 	// Get the window title
 	baseTitle = document.title;
@@ -21,6 +30,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
 		// Set up initial title change
 		this.app.workspace.onLayoutReady(this.initialize.bind(this));
+		//this.app.metadataCache.onCleanCache(this.handleMeta.bind(this));
 
 		//if (!this.app.workspace.layoutReady) {
 		//	this.registerEvent(this.app.workspace.on('layout-ready', this.initialize));
@@ -29,12 +39,13 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
 	initialize() {
 		// console.log('registering callbacks');
-		// When opening, renaming or deleting a file, update the window title
+		// When opening, renaming, or deleting a file, update the window title
 		this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
 		this.registerEvent(this.app.vault.on('rename', this.handleRename));
 		this.registerEvent(this.app.vault.on('delete', this.handleDelete));
-		this.registerEvent(this.app.metadataCache.on('changed', this.handleMeta));
-		this.refreshTitle();
+		this.registerEvent(this.app.metadataCache.on('changed', this.handleMetaChange));
+		//this.registerEvent(this.app.metadataCache.on('resolve', this.handleMetaResolve));
+		//this.refreshTitle();
 	}
 
 	// Restore original title on unload.
@@ -94,12 +105,11 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 	};
 
 	private readonly handleRename = async (file: TFile, oldPath: string): Promise<void> => {
-		// there MUST be a better way...
 		// console.log(`file: ${oldPath} renamed to: ${file.path}`);
-		console.log('file renamed, pausing to allow metadataCache to update');
-		await new Promise(f => setTimeout(f, 3000));
+		// the method below also works, but should not be used
+		// await new Promise(f => setTimeout(f, 3000));
 		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
-			this.refreshTitle(file);
+		  this.app.metadataCache.onCleanCache(async (): Promise<void> => { this.refreshTitle(file); });
 		}
 	};
 
@@ -117,7 +127,13 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		}
 	};
 
-	private readonly handleMeta = async (file: TFile): Promise<void> => {
+	private readonly handleMetaChange = async (file: TFile): Promise<void> => {
+		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
+			this.refreshTitle(file);
+		}
+	};
+
+	private readonly handleMetaResolve = async (file: TFile): Promise<void> => {
 		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
 			this.refreshTitle(file);
 		}
