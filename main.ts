@@ -109,7 +109,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 		// the method below also works, but should not be used
 		// await new Promise(f => setTimeout(f, 3000));
 		if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
-		  this.app.metadataCache.onCleanCache(async (): Promise<void> => { this.refreshTitle(file); });
+			this.app.metadataCache.onCleanCache(() => { this.refreshTitle(file); });
 		}
 	};
 
