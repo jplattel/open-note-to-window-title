@@ -1,9 +1,9 @@
 {
   "author": "Joost Plattel",
   "authorUrl": "https://jplattel.nl",
-  "description": "This plugin shows the current open note in the window title",
+  "description": "Allows template-based customization of the app window title",
   "id": "open-note-to-window-title",
   "isDesktopOnly": false,
-  "name": "Show the current open note in the window title",
-  "version": "0.2.3"
+  "name": "Custom window title",
+  "version": "0.3.0"
 }
