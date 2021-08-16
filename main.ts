@@ -73,9 +73,12 @@ export default class ActiveNoteTitlePlugin extends Plugin {
       // If a file is open, the filename, path and frontmatter is added
       let cache = this.app.metadataCache.getFileCache(file);
       if (cache && cache.frontmatter) {
+        const isTemplate = new RegExp('<%');
         for (const [frontmatterKey, frontmatterValue] of Object.entries(cache.frontmatter || {})) {
           let k = ('frontmatter.' + frontmatterKey) as string;
-          template[k] = frontmatterValue;
+          if (!isTemplate.test(frontmatterValue)) {
+            template[k] = frontmatterValue;
+          }
         }
       }
       let friendlyBasename: string = file.basename;
@@ -102,7 +105,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
     // Process each template key
     Object.keys(template).forEach(field => {
       const hasField = new RegExp(`{{${field}}}`);
-      //console.log(`%cchecking if ${title} contains {{${field}}}`, 'background: #222; color: #f01111');
+      //console.log(`%cchecking if ${title} contains {{${field}}}`, 'background: #222; color: #a0ffff');
       //console.log('bool: ' + hasField.test(title));
       if (hasField.test(title) && template[field] !== null && template[field].length > 0) {
         //console.log(`%cexecuting transforms: [${field}] --> [${template[field]}]`, 'background: #222; color: #bada55');
@@ -117,7 +120,8 @@ export default class ActiveNoteTitlePlugin extends Plugin {
     const replacements = new Map([
       [`^${delimStr}`, ''],
       [`${delimStr}+`, delimStr],
-      [`${delimStr}(?=[^ ])`, titleSeparator],
+      [`${delimStr}(?!\ )`, titleSeparator],
+      [`(?<!\ )${delimStr}`, ''],
     ]);
     for (const [key, value] of replacements) {
       let re = new RegExp(key, 'g');
