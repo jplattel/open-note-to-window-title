@@ -107,7 +107,9 @@ export default class ActiveNoteTitlePlugin extends Plugin {
       const hasField = new RegExp(`{{${field}}}`);
       //console.log(`%cchecking if ${title} contains {{${field}}}`, 'background: #222; color: #a0ffff');
       //console.log('bool: ' + hasField.test(title));
-      if (hasField.test(title) && template[field] !== null && template[field].length > 0) {
+      //console.log('type of field: ' + typeof(field));
+      //console.log(`val: [${template[field]}]`);
+      if (hasField.test(title) && template[field] !== null && String(template[field]).length > 0) {
         //console.log(`%cexecuting transforms: [${field}] --> [${template[field]}]`, 'background: #222; color: #bada55');
         let re = new RegExp(`{{${field}}}`);
         title = title.replace(re, `${template[field]}`);
