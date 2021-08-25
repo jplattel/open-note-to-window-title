@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile, TAbstractFile, normalizePath } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, TFile, TAbstractFile, WorkspaceLeaf, normalizePath } from 'obsidian';
 
 declare module "obsidian" {
   interface App {
@@ -44,6 +44,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
     // console.log('registering callbacks');
     // When opening, renaming, or deleting a file, update the window title
     this.registerEvent(this.app.workspace.on('file-open', this.handleOpen));
+    this.registerEvent(this.app.workspace.on('active-leaf-change', this.handleLeafChange));
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
     this.registerEvent(this.app.metadataCache.on('changed', this.handleMetaChange));
@@ -147,6 +148,10 @@ export default class ActiveNoteTitlePlugin extends Plugin {
     if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
       this.refreshTitle(file);
     }
+  };
+
+  private readonly handleLeafChange = async (leaf: WorkspaceLeaf | null): Promise<void> => {
+    this.refreshTitle();
   };
 
   private readonly handleMetaChange = async (file: TFile): Promise<void> => {
