@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, TFile, TAbstractFile, WorkspaceLeaf, normalizePath } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, TFile, TAbstractFile, WorkspaceLeaf, normalizePath, debounce } from 'obsidian';
 
 declare module "obsidian" {
   interface App {
@@ -57,6 +57,11 @@ export default class ActiveNoteTitlePlugin extends Plugin {
     //console.log(`reverting title to '${this.baseTitle}'`);
     document.title = this.baseTitle;
   }
+
+  // Debounced refreshTitle
+  debouncedRefreshTitle = debounce((file?: TFile) => {
+    this.refreshTitle(file);
+  }, 500, false);
 
   // The main method that is responsible for updating the title
   refreshTitle(file?: TFile): void {
@@ -146,12 +151,12 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
   private readonly handleOpen = async (file: TFile): Promise<void> => {
     if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
-      this.refreshTitle(file);
+      this.debouncedRefreshTitle(file);
     }
   };
 
   private readonly handleLeafChange = async (leaf: WorkspaceLeaf | null): Promise<void> => {
-    this.refreshTitle();
+    this.debouncedRefreshTitle();
   };
 
   private readonly handleMetaChange = async (file: TFile): Promise<void> => {
@@ -214,9 +219,11 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
       [ "filename", "filepath", "basename", "extension" ],
       [ "frontmatter.<any_frontmatter_key>" ]
     ]
-    placeholders.forEach(key => {
+    placeholders.forEach(row => {
       desc.createEl("br")
-      desc.append(`{{${key}}}`)
+      row.forEach(key => {
+        desc.append(`{{${key}}} `)
+      })
     });
 
     new Setting(containerEl)
