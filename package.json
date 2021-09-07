@@ -19,5 +19,5 @@
     "build": "rollup --config rollup.config.js",
     "dev": "rollup --config rollup.config.js -w"
   },
-  "version": "0.2.3"
+  "version": "0.3.0"
 }
