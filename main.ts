@@ -108,6 +108,13 @@ export default class ActiveNoteTitlePlugin extends Plugin {
   templateTitle(template: any, title: string): string {
     let delimStr = this.settings.delimStr;
     let titleSeparator = this.settings.titleSeparator;
+    if (this.settings.overrideYamlField !== null && this.settings.overrideYamlField.length > 0) {
+      let titleOverride = String('frontmatter.' + this.settings.overrideYamlField);
+      if (template[titleOverride]) {
+        // console.log('override title: %s', template[titleOverride]);
+        return template[titleOverride];
+      }
+    }
     // Process each template key
     Object.keys(template).forEach(field => {
       const hasField = new RegExp(`{{${field}}}`);
@@ -135,7 +142,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
       let re = new RegExp(key, 'g');
       title = title.replace(re, value);
     }
-    return title
+    return title;
   };
 
   private readonly handleRename = async (file: TFile, oldPath: string): Promise<void> => {
@@ -185,14 +192,16 @@ interface ActiveNoteTitlePluginSettings {
   titleTemplate: string,
   titleTemplateEmpty: string,
   titleSeparator: string,
-  delimStr: string
+  delimStr: string,
+  overrideYamlField: string
 }
 
 const DEFAULT_SETTINGS: ActiveNoteTitlePluginSettings = {
   titleTemplate: "{{basename}}~~{{vault}} - Obsidian v{{version}}",
   titleTemplateEmpty: "{{vault}} - Obsidian v{{version}}",
   titleSeparator: " - ",
-  delimStr: "~~"
+  delimStr: "~~",
+  overrideYamlField: "title"
 }
 
 class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
@@ -242,6 +251,23 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
             this.plugin.refreshTitle();
           });
       });
+
+    new Setting(containerEl)
+      .setName('YAML Frontmatter Title Override Field')
+      .setDesc('If this frontmatter field is present, use its value as the title instead of dynamically calculating it.')
+      .addText(text => {
+        text.inputEl.style.fontFamily = 'monospace';
+        text.inputEl.style.width = '500px';
+        text.inputEl.style.height = '46px';
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.overrideYamlField)
+          .setValue(this.plugin.settings.overrideYamlField)
+          .onChange((value) => {
+            this.plugin.settings.overrideYamlField = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refreshTitle();
+          });
+    });
 
     desc = document.createDocumentFragment();
     desc.append('Available ');
