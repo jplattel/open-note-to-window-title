@@ -92,6 +92,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
         friendlyBasename = file.name;
       }
       template = {
+        'parentpath': (file.parent).path,
         'filepath': file.path,
         'filename': file.name,
         'basename': friendlyBasename,
@@ -225,7 +226,7 @@ class ActiveNoteTitlePluginSettingsTab extends PluginSettingTab {
     desc.createEl('b').innerText = 'placeholders:';
     let placeholders = [
       [ "vault", "workspace", "version" ],
-      [ "filename", "filepath", "basename", "extension" ],
+      [ "filename", "filepath", "parentpath", "basename", "extension" ],
       [ "frontmatter.<any_frontmatter_key>" ]
     ]
     placeholders.forEach(row => {
