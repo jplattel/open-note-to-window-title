@@ -66,17 +66,26 @@ export default class ActiveNoteTitlePlugin extends Plugin {
   // The main method that is responsible for updating the title
   refreshTitle(file?: TFile): void {
     let template: any;
-    if (!file) {
-      file = this.app.workspace.getActiveFile() || undefined;
-    }
     // For the template, the vault and workspace are always available
     template = {
       'vault': this.app.vault.getName(),
       'version': (this.appVer || ''),
       'workspace': this.app.internalPlugins.plugins.workspaces.instance.activeWorkspace // Defaults to: '' if not enabled
     };
-    if (file instanceof TFile) {
+    if (file && file instanceof TFile) {
       // If a file is open, the filename, path and frontmatter is added
+      let friendlyBasename: string = file.basename;
+      if (file.extension !== 'md') {
+        friendlyBasename = file.name;
+      }
+      template = {
+        'parentpath': (file.parent ? (file.parent).path : ''),
+        'filepath': file.path,
+        'filename': file.name,
+        'basename': friendlyBasename,
+        'extension': file.extension,
+        ...template
+      }
       let cache = this.app.metadataCache.getFileCache(file);
       if (cache && cache.frontmatter) {
         const isTemplate = new RegExp('<%');
@@ -86,18 +95,6 @@ export default class ActiveNoteTitlePlugin extends Plugin {
             template[k] = frontmatterValue;
           }
         }
-      }
-      let friendlyBasename: string = file.basename;
-      if (file.extension !== 'md') {
-        friendlyBasename = file.name;
-      }
-      template = {
-        'parentpath': (file.parent).path,
-        'filepath': file.path,
-        'filename': file.name,
-        'basename': friendlyBasename,
-        'extension': file.extension,
-        ...template
       }
       //console.log(template)
       document.title = this.templateTitle(template, this.settings.titleTemplate);
