@@ -14,6 +14,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
   baseTitle: string = document.title;
   appVer: string;
   settings: any;
+  currentFile: TFile = null;
 
   async onload() {
     // Show the plugin is loading for developers
@@ -60,7 +61,8 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
   // Debounced refreshTitle
   debouncedRefreshTitle = debounce((file?: TFile) => {
-    this.refreshTitle(file);
+    this.refreshTitle(file ?? this.currentFile);
+    this.currentFile = null;
   }, 500, false);
 
   // The main method that is responsible for updating the title
@@ -156,6 +158,7 @@ export default class ActiveNoteTitlePlugin extends Plugin {
 
   private readonly handleOpen = async (file: TFile): Promise<void> => {
     if (file instanceof TFile && file === this.app.workspace.getActiveFile()) {
+      this.currentFile = file;
       this.debouncedRefreshTitle(file);
     }
   };
